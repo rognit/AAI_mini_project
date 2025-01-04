@@ -1,4 +1,5 @@
 from ucimlrepo import fetch_ucirepo
+import pandas as pd
 
 
 class Dataset:
@@ -63,7 +64,18 @@ class Dataset:
         self.n_targets = None
         self.has_missing_values = None
 
+        self.mappings = {}
+
         self.load()
+        self.set_mappings()
+        self.encode()
+
+    def __str__(self):
+        return (f"    Dataset {self.metadata['name']}:\n"
+                f"     - {self.n_instances} instances\n"
+                f"     - {self.n_features} features\n"
+                f"     - {self.n_targets} targets\n"
+                f"     - has missing values: {self.has_missing_values}\n")
 
     def load(self):
         dataset = fetch_ucirepo(id=self.id)
@@ -78,25 +90,86 @@ class Dataset:
         self.n_targets = len(self.variables[self.variables['role'] == 'Target'])
         self.has_missing_values = self.metadata['has_missing_values']
 
-        if False and self.n_targets == 0:
-            print(dataset.data.targets, flush=True)
-            self.y.to_csv(f"{self.name}_targets.csv", index=False)
+        print(dataset)
 
-        print(f"    Dataset {dataset.metadata['name']}:\n"
-              f"     - {self.n_instances} instances\n"
-              f"     - {self.n_features} features\n"
-              f"     - {self.n_targets} targets\n"
-              f"     - has missing values: {self.has_missing_values}\n")
+    def set_mappings(self):
+        def yes_no(column_name):
+            self.mappings[column_name] = {"yes": 1.0, "no": 0.0}
+
+        def freq(column_name):
+            self.mappings[column_name] = {"no": 0.0, "Sometimes": 1.0, "Frequently": 2.0, "Always": 3.0}
+
+        match self.name:
+            case "chess_king_rook_vs_king_pawn":
+                self.mappings["wtoeg"] = {"win": 1.0, "nowin": 0.0}
+
+            case "estimation_of_obesity_levels_based_on_eating_habits_and_physical_condition":
+                yes_no("family_history_with_overweight")
+                yes_no("FAVC")
+                freq("CAEC")
+                freq("CALC")
+                self.mappings["NObeyesdad"] = {
+                    "Insufficient_Weight": 0.0,
+                    "Normal_Weight": 1.0,
+                    "Overweight_Level_I": 2.0,
+                    "Overweight_Level_II": 3.0,
+                    "Obesity_Type_I": 4.0,
+                    "Obesity_Type_II": 5.0,
+                    "Obesity_Type_III": 6.0
+                }
+
+            case "infrared_thermography_temperature":
+                self.mappings["Age"] = {
+                    "18-20": 0,
+                    "21-30": 1,
+                    "31-40": 2,
+                    "41-50": 3,
+                    "51-60": 4,
+                    ">60": 5
+                }
+
+            case "molecular_biology_splice_junction_gene_sequences":
+                for column_number in range(1, 60):  # we want exactly the same encoding for every base
+                    self.mappings[f"Base{column_number}"] = {'A': 0., 'T': 1., 'C': 2., 'G': 3.}
+
+
+
+
+
+    def encode(self):
+        self.encode_df(self.X, self.mappings)
+        self.encode_df(self.y, self.mappings)
+
+    @staticmethod
+    def encode_df(df, mappings):
+        def auto_encode_column(column):  # auto-encode string column to float (1.0, 2.0, 3.0, ...)
+            unique_values = column.unique()
+            encoding_map = {value: float(idx) for idx, value in enumerate(unique_values)}
+            return column.map(encoding_map)
+
+        for column in df.columns:
+            if df[column].dtype == object:  # (string)
+                if column in mappings:  # special encoding
+                    try:
+                        df[column] = df[column].map(mappings[column])
+                    except KeyError:  # we missed a value in the mapping
+                        raise ValueError(f"Unsupported values for column '{column}' in df: {df[column].unique()}")
+                df[column] = auto_encode_column(df[column])  # general encoding
+            elif df[column].dtype == int:  # also changing integers to floats
+                df[column] = df[column].astype(float)
+            elif df[column].dtype != float:
+                raise ValueError(f"Unsupported dtype for column '{column}' in df: {df[column].dtype}")
 
     @classmethod
     def load_datasets(cls, n=-1):
         dataset_ids = list(cls.DATASETS_IDS.items())[:n]
         datasets = []
         for i, (name, id) in enumerate(dataset_ids):
-            print(f"Loading dataset {i+1}/{len(dataset_ids)}: {name} (ID: {id})")
+            print(f"Loading dataset {i + 1}/{len(dataset_ids)}: {name} (ID: {id})")
             datasets.append(Dataset(id, name))
         return datasets
 
     @classmethod
-    def load_sample(cls, id=186):
-        return Dataset(id)
+    def load_sample(cls, name="wine_quality"):
+        return Dataset(cls.DATASETS_IDS[name], name)
+
