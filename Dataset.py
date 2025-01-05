@@ -1,7 +1,8 @@
-from ucimlrepo import fetch_ucirepo
-import pandas as pd
 import numpy as np
+import pandas as pd
+from ucimlrepo import fetch_ucirepo
 from dataset_config import DATASETS_IDS, get_mappings
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 class Dataset:
     def __init__(self, id, name=None):
@@ -22,12 +23,19 @@ class Dataset:
         self.X = None
         self.y = None
 
+        self.scalers = {
+            'X': None,
+            'y': None
+        }
+
         self.load()
         self.mappings = get_mappings(self.name)
         self.encode()
 
         self.n_features = len(self.X.columns)
         self.n_targets = len(self.y.columns)
+
+        self.normalize()
 
         print(self)
 
@@ -37,6 +45,12 @@ class Dataset:
                 f"     - {self.n_features} features\n"
                 f"     - {self.n_targets} targets\n"
                 f"     - has missing values: {self.has_missing_values}\n")
+
+    def visualize(self):
+        self.X.to_csv(f"{self.name}_X.csv", index=False)
+        self.X_raw.to_csv(f"{self.name}_X_raw.csv", index=False)
+        self.y.to_csv(f"{self.name}_y.csv", index=False)
+        self.y_raw.to_csv(f"{self.name}_y_raw.csv", index=False)
 
     def load(self):
         dataset = fetch_ucirepo(id=self.id)
@@ -132,14 +146,28 @@ class Dataset:
 
         self.encode_df(self.X, self.mappings)
         self.encode_df(self.y, self.mappings)
-        #self.X.to_csv(f"{self.name}_X.csv", index=False)
-        #self.X_raw.to_csv(f"{self.name}_X_raw.csv", index=False)
 
-    def visualize(self):
-        self.X.to_csv(f"{self.name}_X.csv", index=False)
-        self.X_raw.to_csv(f"{self.name}_X_raw.csv", index=False)
-        self.y.to_csv(f"{self.name}_y.csv", index=False)
-        self.y_raw.to_csv(f"{self.name}_y_raw.csv", index=False)
+    def normalize(self, method='standard', target=True):
+        if method not in ['standard', 'minmax']:
+            raise ValueError("Method must be either 'standard' or 'minmax'")
+
+        Scaler = StandardScaler if method == 'standard' else MinMaxScaler
+
+        self.scalers['X'] = Scaler()
+        self.X = pd.DataFrame(
+            self.scalers['X'].fit_transform(self.X),
+            columns=self.X.columns,
+            index=self.X.index
+        )
+
+        if target:
+            self.scalers['y'] = Scaler()
+            self.y = pd.DataFrame(
+                self.scalers['y'].fit_transform(self.y),
+                columns=self.y.columns,
+                index=self.y.index
+            )
+
 
     @classmethod
     def load_datasets(cls, n=-1):
