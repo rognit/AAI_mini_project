@@ -31,7 +31,7 @@ class Dataset:
         self.n_features = len(self.X.columns)
         self.n_targets = len(self.y.columns)
 
-        print(self)
+        print(self, flush=True)
 
     def __str__(self):
         return (f"    Dataset {self.metadata['name']}:\n"
@@ -148,7 +148,7 @@ class Dataset:
         dataset_ids = list(DATASETS_IDS.items())[:n]
         datasets = []
         for i, (name, id) in enumerate(dataset_ids):
-            print(f"Loading dataset {i + 1}/{len(dataset_ids)}: {name} (ID: {id})")
+            print(f"Loading dataset {i + 1}/{len(dataset_ids)}: {name} (ID: {id})", flush=True)
             datasets.append(Dataset(id, name))
         return datasets
 
