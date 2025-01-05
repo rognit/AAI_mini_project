@@ -7,6 +7,7 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 from dataset_config import DATASETS_IDS, get_mappings
+from Encoder import Encoder
 
 class Dataset:
     def __init__(self, id, name=None, norm='standard', pca=.95):
@@ -31,30 +32,17 @@ class Dataset:
 
         self.mappings = get_mappings(self.name)
 
-        self.load()
-        self.encode()
-        self.normalize(norm)
-        self.apply_pca(pca)
+        self._load()
+        self._encode()
+        self._normalize(norm)
+        self._apply_pca(pca)
 
         self.n_features = self.X.shape[1]
         self.n_targets = self.y.shape[1]
 
         print(self, flush=True)
 
-    def __str__(self):
-        return (f"  Final dataset {self.metadata['name']}:\n"
-                f"   - {self.n_instances} instances\n"
-                f"   - {self.n_features} features\n"
-                f"   - {self.n_targets} targets\n"
-                f"   - has missing values: {self.has_missing_values}\n")
-
-    def visualize(self):
-        self.X.to_csv(f"{self.name}_X.csv", index=False)
-        self.X_raw.to_csv(f"{self.name}_X_raw.csv", index=False)
-        self.y.to_csv(f"{self.name}_y.csv", index=False)
-        self.y_raw.to_csv(f"{self.name}_y_raw.csv", index=False)
-
-    def load(self):
+    def _load(self):
         dataset = fetch_ucirepo(id=self.id)
 
         self.X = dataset.data.features
@@ -70,79 +58,16 @@ class Dataset:
         self.n_raw_targets = len(self.variables[self.variables['role'] == 'Target'])
         self.has_missing_values = self.metadata['has_missing_values']
 
-    @staticmethod
-    def encode_enrich_date(df):  # transform 'Date' into 'day_of_month, day_of_week, month, days_since_start'
-        try:
-            dates = pd.to_datetime(df['Date'], format='%Y/%m/%d')
-        except ValueError:
-            try:
-                dates = pd.to_datetime(df['Date'], format='%d/%m/%Y')
-            except ValueError: # If both fail, let pandas try to figure it out
-                dates = pd.to_datetime(df['Date'])
-
-        df['day_of_month'] = dates.dt.day / 31.  # [0,1]
-        df['day_of_week'] = dates.dt.dayofweek / 6.  # [0,1]
-        df['month'] = (dates.dt.month - 1) / 11.  # [0,1]
-
-        min_date = dates.min()
-        max_date = dates.max()
-        days_diff = (max_date - min_date).days
-        if days_diff == 0:  # Handle single day case
-            df['days_since_start'] = 0.
-        else:
-            df['days_since_start'] = (dates - min_date).dt.total_seconds() / (24 * 60 * 60) / days_diff
-
-        return df.drop('Date', axis=1)
-
-    @staticmethod
-    def encode_enrich_time(df):  # transform 'Time' into 'hour, minute, hour_sin, hour_cos, minute_sin, minute_cos, minutes_since_midnight'
-        times = pd.to_datetime('2000-01-01 ' + df['Time'].astype(str))  # (adding a dummy date)
-
-        df['hour'] = times.dt.hour / 23.  # [0,1]
-        df['minute'] = times.dt.minute / 59.  # [0,1]
-
-        df['hour_sin'] = np.sin(2 * np.pi * times.dt.hour / 24.)
-        df['hour_cos'] = np.cos(2 * np.pi * times.dt.hour / 24.)
-        df['minute_sin'] = np.sin(2 * np.pi * times.dt.minute / 60.)
-        df['minute_cos'] = np.cos(2 * np.pi * times.dt.minute / 60.)
-
-        minutes_since_midnight = times.dt.hour * 60. + times.dt.minute
-        df['minutes_since_midnight'] = minutes_since_midnight / (24. * 60.)  # [0,1]
-
-        return df.drop('Time', axis=1)
-
-    @staticmethod
-    def encode_df(df, mappings):
-        def auto_encode_column(column, alpha=False):  # auto-encode string column to float (1., 2., 3., ...)
-            unique_values = sorted(column.unique()) if alpha else column.unique()
-            encoding_map = {value: float(idx) for idx, value in enumerate(unique_values)}
-            return column.map(encoding_map)
-
-        for column in df.columns:
-            if df[column].dtype == object:  # (string)
-                if column in mappings:  # special encoding
-                    try:
-                        df[column] = df[column].map(mappings[column])
-                    except KeyError:  # means we missed a value in the manual mapping
-                        raise ValueError(f"Unsupported values for column '{column}' in df: {df[column].unique()}")
-                else:
-                    df[column] = auto_encode_column(df[column])  # general encoding
-            elif df[column].dtype == np.int64:  # also changing integers to floats
-                df[column] = df[column].astype(float)
-            elif df[column].dtype != float:
-                raise ValueError(f"Unsupported dtype for column '{column}' in df: {df[column].dtype}")
-
-
-    def encode(self):
+    def _encode(self):
         if 'Date' in self.X.columns:  # encoding + enrichment
-            self.X = self.encode_enrich_date(self.X)
+            self.X = Encoder.encode_enrich_date(self.X)
         if 'Time' in self.X.columns:  # encoding + enrichment
-            self.X = self.encode_enrich_time(self.X)
+            self.X = Encoder.encode_enrich_time(self.X)
 
-        self.encode_df(self.X, self.mappings)
-        self.encode_df(self.y, self.mappings)
+        Encoder.encode_df(self.X, self.mappings)
+        Encoder.encode_df(self.y, self.mappings)
 
-    def normalize(self, method):
+    def _normalize(self, method):
         if method not in ['standard', 'minmax']:
             raise ValueError("Method must be either 'standard' or 'minmax'")
 
@@ -150,7 +75,7 @@ class Dataset:
         self.X = pd.DataFrame(scaler.fit_transform(self.X), columns=self.X.columns, index=self.X.index)
         self.y = pd.DataFrame(scaler.fit_transform(self.y), columns=self.y.columns, index=self.y.index)
 
-    def apply_pca(self, variance_threshold):
+    def _apply_pca(self, variance_threshold):
         # Initialize PCA with maximum possible components, fit it to get variance ratios and compute the variance ratios
         pca = PCA()
         pca.fit(self.X)
@@ -177,6 +102,19 @@ class Dataset:
               f"({100 * (len(self.pca_variance_ratio) - self.pca_n_components) / len(self.pca_variance_ratio):.0f}% "
               f"reduction)\n"
               f"   - Preserved {cumulative_variance_ratio[self.pca_n_components - 1] * 100:.2f}% of variance")
+
+    def __str__(self):
+        return (f"  Final dataset {self.metadata['name']}:\n"
+                f"   - {self.n_instances} instances\n"
+                f"   - {self.n_features} features\n"
+                f"   - {self.n_targets} targets\n"
+                f"   - has missing values: {self.has_missing_values}\n")
+
+    def visualize(self):
+        self.X.to_csv(f"{self.name}_X.csv", index=False)
+        self.X_raw.to_csv(f"{self.name}_X_raw.csv", index=False)
+        self.y.to_csv(f"{self.name}_y.csv", index=False)
+        self.y_raw.to_csv(f"{self.name}_y_raw.csv", index=False)
 
     @classmethod
     def load_datasets(cls, n=-1):
