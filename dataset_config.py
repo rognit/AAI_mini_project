@@ -36,7 +36,7 @@ DATASETS_IDS = {
     # "communities_and_crime_unnormalized": 211, # missing values :/ and same as communities_and_crime id 183
     "statlog_landsat_satellite": 146,
     # "mice_protein_expression": 342, # missing values :/
-    "diabetic_retinopathy_debrecen": 329,
+    # "diabetic_retinopathy_debrecen": 329, # feature nam error (2 features exudate3 instead of exudate3 and exudate4)
     "isolet": 54,
     "chess_king_rook_vs_king_pawn": 22,
     "waveform_database_generator_version_1": 107,

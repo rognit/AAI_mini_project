@@ -5,9 +5,11 @@ from dataset_config import DATASETS_IDS, get_mappings
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 class Dataset:
-    def __init__(self, id, name=None):
+    def __init__(self, id, name=None, norm='standard'):
         self.id = id
         self.name = name or f"dataset_{id}"
+        self.X = None
+        self.y = None
 
         self.X_raw = None
         self.y_raw = None
@@ -19,23 +21,15 @@ class Dataset:
         self.n_raw_targets = None
         self.has_missing_values = None
 
-        self.mappings = {}
-        self.X = None
-        self.y = None
-
-        self.scalers = {
-            'X': None,
-            'y': None
-        }
+        self.mappings = get_mappings(self.name)
 
         self.load()
-        self.mappings = get_mappings(self.name)
+        self.visualize()
         self.encode()
+        self.normalize(method=norm)
 
         self.n_features = len(self.X.columns)
         self.n_targets = len(self.y.columns)
-
-        self.normalize()
 
         print(self)
 
@@ -69,11 +63,7 @@ class Dataset:
         self.has_missing_values = self.metadata['has_missing_values']
 
     @staticmethod
-    def encode_enrich_date(df):
-        """
-        transform 'Date' into 'day_of_month, day_of_week, month, days_since_start'
-        """
-
+    def encode_enrich_date(df):  # transform 'Date' into 'day_of_month, day_of_week, month, days_since_start'
         try:
             dates = pd.to_datetime(df['Date'], format='%Y/%m/%d')
         except ValueError:
@@ -97,11 +87,7 @@ class Dataset:
         return df.drop('Date', axis=1)
 
     @staticmethod
-    def encode_enrich_time(df):
-        """
-        transform 'Time' into 'hour, minute, hour_sin, hour_cos, minute_sin, minute_cos, minutes_since_midnight'
-        """
-
+    def encode_enrich_time(df):  # transform 'Time' into 'hour, minute, hour_sin, hour_cos, minute_sin, minute_cos, minutes_since_midnight'
         times = pd.to_datetime('2000-01-01 ' + df['Time'].astype(str))  # (adding a dummy date)
 
         df['hour'] = times.dt.hour / 23.  # [0,1]
@@ -138,6 +124,7 @@ class Dataset:
             elif df[column].dtype != float:
                 raise ValueError(f"Unsupported dtype for column '{column}' in df: {df[column].dtype}")
 
+
     def encode(self):
         if 'Date' in self.X.columns:  # encoding + enrichment
             self.X = self.encode_enrich_date(self.X)
@@ -147,26 +134,13 @@ class Dataset:
         self.encode_df(self.X, self.mappings)
         self.encode_df(self.y, self.mappings)
 
-    def normalize(self, method='standard', target=True):
+    def normalize(self, method):
         if method not in ['standard', 'minmax']:
             raise ValueError("Method must be either 'standard' or 'minmax'")
 
-        Scaler = StandardScaler if method == 'standard' else MinMaxScaler
-
-        self.scalers['X'] = Scaler()
-        self.X = pd.DataFrame(
-            self.scalers['X'].fit_transform(self.X),
-            columns=self.X.columns,
-            index=self.X.index
-        )
-
-        if target:
-            self.scalers['y'] = Scaler()
-            self.y = pd.DataFrame(
-                self.scalers['y'].fit_transform(self.y),
-                columns=self.y.columns,
-                index=self.y.index
-            )
+        scaler = StandardScaler() if method == 'standard' else MinMaxScaler()
+        self.X = pd.DataFrame(scaler.fit_transform(self.X), columns=self.X.columns, index=self.X.index)
+        self.y = pd.DataFrame(scaler.fit_transform(self.y), columns=self.y.columns, index=self.y.index)
 
 
     @classmethod
