@@ -1,11 +1,15 @@
 import numpy as np
 import pandas as pd
+
 from ucimlrepo import fetch_ucirepo
-from dataset_config import DATASETS_IDS, get_mappings
+
+from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
+from dataset_config import DATASETS_IDS, get_mappings
+
 class Dataset:
-    def __init__(self, id, name=None, norm='standard'):
+    def __init__(self, id, name=None, norm='standard', pca=.95):
         self.id = id
         self.name = name or f"dataset_{id}"
         self.X = None
@@ -21,24 +25,28 @@ class Dataset:
         self.n_raw_targets = None
         self.has_missing_values = None
 
+        self.pca_n_components = None
+        self.pca_variance_ratio = None
+        self.pca_cumulative_variance = None
+
         self.mappings = get_mappings(self.name)
 
         self.load()
-        self.visualize()
         self.encode()
-        self.normalize(method=norm)
+        self.normalize(norm)
+        self.apply_pca(pca)
 
-        self.n_features = len(self.X.columns)
-        self.n_targets = len(self.y.columns)
+        self.n_features = self.X.shape[1]
+        self.n_targets = self.y.shape[1]
 
         print(self, flush=True)
 
     def __str__(self):
-        return (f"    Dataset {self.metadata['name']}:\n"
-                f"     - {self.n_instances} instances\n"
-                f"     - {self.n_features} features\n"
-                f"     - {self.n_targets} targets\n"
-                f"     - has missing values: {self.has_missing_values}\n")
+        return (f"  Final dataset {self.metadata['name']}:\n"
+                f"   - {self.n_instances} instances\n"
+                f"   - {self.n_features} features\n"
+                f"   - {self.n_targets} targets\n"
+                f"   - has missing values: {self.has_missing_values}\n")
 
     def visualize(self):
         self.X.to_csv(f"{self.name}_X.csv", index=False)
@@ -105,7 +113,7 @@ class Dataset:
 
     @staticmethod
     def encode_df(df, mappings):
-        def auto_encode_column(column, alpha=False):  # auto-encode string column to float (1.0, 2.0, 3.0, ...)
+        def auto_encode_column(column, alpha=False):  # auto-encode string column to float (1., 2., 3., ...)
             unique_values = sorted(column.unique()) if alpha else column.unique()
             encoding_map = {value: float(idx) for idx, value in enumerate(unique_values)}
             return column.map(encoding_map)
@@ -142,6 +150,33 @@ class Dataset:
         self.X = pd.DataFrame(scaler.fit_transform(self.X), columns=self.X.columns, index=self.X.index)
         self.y = pd.DataFrame(scaler.fit_transform(self.y), columns=self.y.columns, index=self.y.index)
 
+    def apply_pca(self, variance_threshold):
+        # Initialize PCA with maximum possible components, fit it to get variance ratios and compute the variance ratios
+        pca = PCA()
+        pca.fit(self.X)
+
+        cumulative_variance_ratio = np.cumsum(pca.explained_variance_ratio_)
+
+        # Number of components needed to meet variance threshold
+        self.pca_n_components = np.argmax(cumulative_variance_ratio >= variance_threshold) + 1
+        self.pca_variance_ratio = pca.explained_variance_ratio_
+        self.pca_cumulative_variance = cumulative_variance_ratio
+
+        # Apply PCA with selected number of components
+        pca = PCA(n_components=self.pca_n_components)
+
+        column_names = [f'PC{i + 1}' for i in range(self.pca_n_components)]  # Convert to DataFrame with meaningful column names
+        self.X = pd.DataFrame(
+            pca.fit_transform(self.X),
+            columns=column_names,
+            index=self.X.index
+        )
+
+        print(f"  Applied PCA transformation:\n"
+              f"   - Reduced features from {len(self.pca_variance_ratio)} to {self.pca_n_components} "
+              f"({100 * (len(self.pca_variance_ratio) - self.pca_n_components) / len(self.pca_variance_ratio):.0f}% "
+              f"reduction)\n"
+              f"   - Preserved {cumulative_variance_ratio[self.pca_n_components - 1] * 100:.2f}% of variance")
 
     @classmethod
     def load_datasets(cls, n=-1):

@@ -24,7 +24,7 @@ DATASETS_IDS = {
     "iranian_churn": 563,
     "taiwanese_bankruptcy_prediction": 572,
     "room_occupancy_estimation": 864,
-    "infrared_thermography_temperature": 925,
+    # "infrared_thermography_temperature": 925, # missing values ! even if it claims otherwise !!!
     # "support2": 880, # missing values :/
     "solar_flare": 89,
     "image_segmentation": 50,
@@ -42,7 +42,7 @@ DATASETS_IDS = {
     "waveform_database_generator_version_1": 107,
     "page_blocks_classification": 78,
     "musk_version_2": 75,
-    "molecular_biology_splice_junction_gene_sequences": 69,
+    # "molecular_biology_splice_junction_gene_sequences": 69, # missing values ! even if it claims otherwise !!!
     "statlog_image_segmentation": 147
 }
 
