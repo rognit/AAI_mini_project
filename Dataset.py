@@ -101,7 +101,7 @@ class Dataset:
               f"   - Reduced features from {len(self.pca_variance_ratio)} to {self.pca_n_components} "
               f"({100 * (len(self.pca_variance_ratio) - self.pca_n_components) / len(self.pca_variance_ratio):.0f}% "
               f"reduction)\n"
-              f"   - Preserved {cumulative_variance_ratio[self.pca_n_components - 1] * 100:.2f}% of variance")
+              f"   - Preserved {cumulative_variance_ratio[self.pca_n_components - 1] * 100:.2f}% of variance", flush=True)
 
     def __str__(self):
         return (f"  Final dataset {self.metadata['name']}:\n"
