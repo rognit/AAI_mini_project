@@ -64,7 +64,6 @@ frametitlebackgroundcolor=gray!20,
 innertopmargin=\topskip,
 }  
 
-
 \usepackage{tocloft}
 \setlength{\cftparskip}{1pt}
  
@@ -72,7 +71,7 @@ innertopmargin=\topskip,
     \begin{titlepage}      
         \begin{center}
             \includegraphics[width=0.4\textwidth]{lulea-tekniska-universitet-logo.png}\\[4cm]
-            \huge{Mini Project : Development of 2 classification models for 5 datasets}\\[1cm]
+            \huge{Mini Project : Development of 4 classification models for 20 datasets}\\[1cm]
             \linespread{1.2}\large { BOURGUEIL Pierre, DAPONTE Tanguy, DUFLOS Emilie, GABORIT Nawen}\\[0.5cm]
             \linespread{1}~\\[2cm]
             {\Large D7041E, Applied Artificial Intelligence, Lp2, H24}    
@@ -87,8 +86,7 @@ innertopmargin=\topskip,
 \newpage
 
 \section{Grading criteria}
-For this project, we will develop one unsupervised model and one supervised model to classify 5 datasets from the 121 UCI datasets (\href{https://archive.ics.uci.edu/datasets}{Available here})
-
+For this project, we will develop two unsupervised models and two supervised models to classify 20 datasets from the 121 UCI datasets (\href{https://archive.ics.uci.edu/datasets}{Available here})
 
 \section{Chosen datasets}
 To select our datasets, we looked at the first 30 datasets from the UCI ML Repository and used the following criteria:
@@ -132,6 +130,11 @@ Finally, we removed the datasets containing missing values or errors and ended u
     \item Decision Tree Classifier
     
     A decision tree classifier (\href{https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier}{sklearn documentation}) models data using a tree-like structure, where each internal node represents a decision based on a feature, and each leaf node represents the output or predicted class.
+
+    \item Support Vector Classifier
+    
+    Another very used model for supervised classification is the SVC (\href{https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html#sklearn.svm.SVC}{sklearn documentation}). It works by finding the hyperplane that separates best the data points of each classes, maximizing the margin between the closest points of each class, called support vectors. 
+    
 \end{itemize}
 
 \subsection{Unsupervised models}
@@ -166,8 +169,56 @@ To evaluate the performance of our models on each dataset we used the accuracy (
 
 \section{Results}
 
-\newpage
+\subsection{Decision Tree Classifier}
 
+When executing the code, we obtain the following results (the results in the table correspond to the decision tree model) :
+
+
+\begin{tabular}{cccc}
+   & dataset id                                            &   name & accuracy \\
+0     &     186         &                             wine quality & 0.591538 \\
+1     &     697     & predict students dropout and academic success & 0.638418 \\
+2     &    544  & estimation of obesity levels based on eating h & 0.711584 \\
+3     &     94   &                                       spambase & 0.879479 \\
+4     &    560   &                      seoul bike sharing demand & 0.976598 \\
+5     &     80   &      optical recognition of handwritten digits & 0.859431 \\
+6     &    189   &                      parkinsons telemonitoring & 0.211915 \\
+7     &    890   &           aids clinical trials group study 175 & 0.742991 \\
+8     &    563   &                                  iranian churn & 0.914286 \\
+9    &    572    &               taiwanese bankruptcy prediction & 0.934018 \\
+10   &     864   &                      room occupancy estimation & 0.975814 \\
+11   &      89   &                                    solar flare & 0.816547 \\
+12   &      50   &                             image segmentation & 0.761905 \\
+13   &     379   &                               website phishing & 0.833948 \\
+14   &     198   &                            steel plates faults & 0.899743 \\
+15   &     503   &    hepatitis c virus hcv for egyptian patients & 0.267148 \\
+16   &     146   &                      statlog landsat satellite & 0.857809 \\
+17   &      54   &                                         isolet & 0.667949 \\
+18   &      22   &                   chess king rook vs king pawn & 0.867188 \\
+19   &     107   &          waveform database generator version 1 & 0.817000 \\
+20   &      78   &                     page blocks classification & 0.950685 \\
+21   &      75   &                                 musk version 2 & 0.926515 \\
+22   &     147   &                     statlog image segmentation & 0.909091 \\
+\end{tabular}
+
+
+\begin{itemize}
+    \item Average accuracy for Decision Tree : 0.783
+    \item Average accuracy for SVC : 0.829
+\end{itemize}
+
+
+Overall, the SVC performs better than the Decision Tree Classifier; however, for some specific cases the decision tree is more adapted and the accuracy is higher than the support vector classifier. 
+
+\begin{itemize}
+    \item Average Rand Index for KMeans : 0.626
+    \item Average Rand Index for DBSCAN : 0.458
+\end{itemize}
+
+
+When analyzing more the results, we can see that even if DBSCAN don't have a good performance overall, for some datasets the results are good, for example "seoul bike sharing demand" with an index of 0.93. Indeed, DBSCAN is very sensitive to its hyperparameters and especially epsilon, since we kept the same value for every dataset, it was not adapted to some of them. Moreover, DBSCAN handles noise, which is an advantage in some specific cases but not in ours. The Kmeans' performance is better overall even if we needed to specify the number of clusters in the beginning.
+
+\newpage
 \section{Conlusion}
 %
 \end{document}
