@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score
@@ -46,6 +47,7 @@ def main():
     results_df = pd.DataFrame(results)
     print("\n=== Final Result ===\n")
     print(results_df)
+    print(np.mean(results_df['accuracy']))
     return results_df
 
 if __name__ == "__main__":

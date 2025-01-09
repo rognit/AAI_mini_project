@@ -1,0 +1,175 @@
+\documentclass[10pt, a4paper]{article}
+\author{}
+\usepackage[top=2.5cm, bottom=3cm, left=2.5cm, right=2.5cm]{geometry}
+\usepackage{amsmath,amsthm,amsfonts,amssymb,amscd, fancyhdr, color, comment, graphicx, environ}
+\usepackage{float}
+\usepackage{mathrsfs}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{xcolor}
+\definecolor{dark}{RGB}{0,0,0}
+\definecolor{verbatimgray}{RGB}{245,245,245}
+\usepackage{enumerate}
+\usepackage[shortlabels]{enumitem}
+\usepackage{indentfirst}
+\usepackage[english]{babel}
+\usepackage{listings}
+\lstset{
+    basicstyle=\small\ttfamily,
+    breaklines=true,
+    breakindent=0pt,
+    backgroundcolor=\color{verbatimgray},
+    framexleftmargin=10pt,  
+    framexrightmargin=10pt,
+    xleftmargin=10pt,
+    xrightmargin=10pt, 
+    columns=fullflexible
+}
+\usepackage{sectsty}
+\usepackage{thmtools}
+\usepackage{shadethm}
+\usepackage{hyperref}
+\usepackage{setspace}
+\usepackage{algorithm2e}
+\usepackage{fancybox}
+\usepackage[T1]{fontenc}
+\usepackage{mdframed}
+\usepackage{csquotes}
+\usepackage{array}
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\setlength{\parskip}{0.3\baselineskip plus \smallskipamount minus \smallskipamount}
+\setlength{\parindent}{10pt}
+\setlist[itemize]{parsep=0pt, noitemsep, topsep=0pt}
+\setlist[enumerate]{parsep=0pt}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=dark,
+    filecolor=magenta,      
+    urlcolor=blue,
+}
+
+\pagestyle{fancy}
+\headheight 35pt
+\lhead{\includegraphics[height=1.3cm]{lulea-tekniska-universitet-logo.png}}
+\lfoot{}
+\pagenumbering{arabic}
+\cfoot{\small\thepage}
+\rfoot{}
+\headsep 1.2em
+\renewcommand{\baselinestretch}{1.25}     
+\mdfdefinestyle{theoremstyle}{
+linecolor=black,linewidth=1pt,
+frametitlerule=true,
+frametitlebackgroundcolor=gray!20,
+innertopmargin=\topskip,
+}  
+
+\usepackage[backend=biber,style=ieee]{biblatex}
+\addbibresource{bibtex.bib}
+
+\usepackage{tocloft}
+\setlength{\cftparskip}{1pt}
+ 
+\begin{document}
+    \begin{titlepage}      
+        \begin{center}
+            \includegraphics[width=0.4\textwidth]{lulea-tekniska-universitet-logo.png}\\[4cm]
+            \huge{Mini Project : Development of 2 classification models for 5 datasets}\\[1cm]
+            \linespread{1.2}\large { BOURGUEIL Pierre, DAPONTE Tanguy, DUFLOS Emilie, GABORIT Nawen}\\[0.5cm]
+            \linespread{1}~\\[2cm]
+            {\Large D7041E, Applied Artificial Intelligence, Lp2, H24}    
+            \vfill
+            \today
+        \end{center}
+    \end{titlepage}
+
+\newpage
+
+\tableofcontents
+\newpage
+
+\section{Grading criteria}
+For this project, we will develop one unsupervised model and one supervised model to classify 5 datasets from the 121 UCI datasets (\href{https://archive.ics.uci.edu/datasets}{Available here})
+
+
+\section{Chosen datasets}
+To select our datasets, we looked at the first 30 datasets from the UCI ML Repository and used the following criteria:
+\begin{itemize}
+    \item 1K to 10K instances
+    \item 10 to 4K features
+    \item available for python import
+\end{itemize}
+Finally, we removed the datasets containing missing values or errors and ended up with the 22 following datasets (the number is the ID of the dataset):
+\begin{itemize}
+    \item "wine quality" : 186
+    \item "predict students dropout and academic success": 697
+    \item "estimation of obesity levels based on eating habits and physical condition": 544
+    \item "spambase": 94
+    \item "seoul bike sharing demand": 560
+    \item "optical recognition of handwritten digits": 80
+    \item "parkinsons telemonitoring": 189
+    \item "aids clinical trials group study 175": 890
+    \item "iranian churn": 563
+    \item "taiwanese bankruptcy prediction": 572
+    \item "room occupancy estimation": 864
+    \item "solar flare": 89
+    \item "image segmentation": 50
+    \item "website phishing": 379
+    \item "steel plates faults": 198
+    \item "hepatitis c virus hcv for egyptian patients": 503
+    \item "statlog landsat satellite": 146
+    \item "isolet": 54
+    \item "chess king rook vs king pawn": 22
+    \item "waveform database generator version 1": 107
+    \item "page blocks classification": 78
+    \item "musk version 2": 75
+    \item "statlog image segmentation": 147
+\end{itemize}
+\newpage
+
+\section{Used models}
+\subsection{Supervised models}
+
+\begin{itemize}
+    \item Decision Tree Classifier
+    
+    A decision tree classifier (\href{https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier}{sklearn documentation}) models data using a tree-like structure, where each internal node represents a decision based on a feature, and each leaf node represents the output or predicted class.
+\end{itemize}
+
+\subsection{Unsupervised models}
+We selected two unsupervised models : KMeans and DBSCAN.
+\begin{itemize}
+    \item KMeans
+    
+    We used the scikit-learn implementation of KMeans (\href{https://scikit-learn.org/stable/modules/generated/sklearn.cluster.KMeans.html#sklearn.cluster.KMeans}{link to documentation}). KMeans partitions the data points of a dataset into k clusters (k has to be defined). The algorithm is called K-Means because a centroid (center of the cluster) is the mean of all the points in the cluster. Points are assigned to clusters (nearest centroid) and then the centroids are recalculated until the convergence (centroids don't change significantly anymore).
+
+
+    \item DBSCAN
+    
+    We also used the implementation of sklearn (\href{https://scikit-learn.org/stable/modules/generated/sklearn.cluster.DBSCAN.html}{link to documentation}). DBSCAN or Density-Based Spatial Clustering of Applications with Noise is a clustering algorithm that groups data points close to each other. If the distance between 2 points is lower or equal to the epsilon defined then they are considered neighbors and are assigned to the same cluster. Some points are assigned as noisy points (not in any cluster).
+\end{itemize}
+\newpage
+
+\section{Experimental methodology}
+\subsection{Data preprocessing}
+Before training the models, we preprocessed all the datasets. Each dataset was loaded, encoded, normalized and then we applied PCA to reduce the size. The encoding of a dataset consist in managing the values such as date or time and for some specific datasets, mapping the categorical values into numerical values. For example, if in a dataset, one feature took the values 'yes' or 'no', it became 1 or 0 (one hot encoding).
+After, the datasets are normalized using the function MinMaxScaler().
+Then, Principal Components Analysis is applied to reduce the number of features but keep the maximum variance ratio possible.
+
+\subsection{Train Test Split}
+For the supervised models, we separated each dataset into a train part (80\%) and a test part(20\%), we trained the model using the train part and then predicted using the test set and evaluated the performance with this prediction.
+
+\subsection{Training}
+After all the preprocessing of the dataset, the models can be trained on the data.
+
+\subsection{Metrics}
+To evaluate the performance of our models on each dataset we used the accuracy (difference between the true labels and the predicted ones) for the supervised models and rand score (it is a similarity measure between two clusterings, see \href{https://scikit-learn.org/stable/modules/generated/sklearn.metrics.rand_score.html#sklearn.metrics.rand_score}{sklearn documentation} for more precision) for the unsupervised. We chose the rand score for the unsupervised since the labels predicted are not always the same as the true labels but can correspond to the same class.
+\newpage
+
+\section{Results}
+
+\newpage
+
+\section{Conlusion}
+%
+\end{document}
